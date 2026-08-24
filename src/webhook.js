@@ -133,7 +133,18 @@ function parseChangeEvent(entry, change) {
 
   const field = change.field;
   const value = (change.value && typeof change.value === 'object') ? change.value : {};
-
+if (field === 'messages') {
+  return {
+    type: 'message',
+    senderId: value.sender?.id || null,
+    recipientId: value.recipient?.id || null,
+    messageId: value.message?.mid || null,
+    text: typeof value.message?.text === 'string'
+      ? value.message.text
+      : null,
+    timestamp: value.timestamp || entry.time || null,
+  };
+}
   if (field === 'comments') {
     return {
       type: 'comment',

@@ -60,6 +60,7 @@ function logStartupStatus() {
   }
   if (!status.instagramConfigured) {
     console.warn('[startup] INSTAGRAM_ACCESS_TOKEN and/or INSTAGRAM_USER_ID missing — outbound Instagram API calls will fail until both are set.');
+  }
   if (config.aiEnabled && !config.geminiApiKey) {
   console.warn('[startup] AI_ENABLED=true but GEMINI_API_KEY is missing — replies will use the static fallback message.');
   }

@@ -26,8 +26,8 @@ const config = {
   // see the note in .env.example for where to check.
   graphApiVersion: process.env.GRAPH_API_VERSION || 'v26.0',
 
-  openaiApiKey: process.env.OPENAI_API_KEY || '',
-  openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+  geminiApiKey: process.env.GEMINI_API_KEY || '',
+geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
 
   aiEnabled: toBool(process.env.AI_ENABLED, true),
   autoReplyEnabled: toBool(process.env.AUTO_REPLY_ENABLED, true),
@@ -41,7 +41,7 @@ const config = {
 function getConfigStatus() {
   return {
     instagramConfigured: Boolean(config.instagramAccessToken && config.instagramUserId),
-    aiConfigured: Boolean(config.aiEnabled && config.openaiApiKey),
+    aiConfigured: Boolean(config.aiEnabled && config.geminiApiKey),
     webhookConfigured: Boolean(config.verifyToken),
     autoReplyEnabled: config.autoReplyEnabled,
     autoCommentReplyEnabled: config.autoCommentReplyEnabled,
@@ -60,10 +60,10 @@ function logStartupStatus() {
   }
   if (!status.instagramConfigured) {
     console.warn('[startup] INSTAGRAM_ACCESS_TOKEN and/or INSTAGRAM_USER_ID missing — outbound Instagram API calls will fail until both are set.');
+  if (config.aiEnabled && !config.geminiApiKey) {
+  console.warn('[startup] AI_ENABLED=true but GEMINI_API_KEY is missing — replies will use the static fallback message.');
   }
-  if (config.aiEnabled && !config.openaiApiKey) {
-    console.warn('[startup] AI_ENABLED=true but OPENAI_API_KEY is missing — replies will use the static fallback message.');
-  }
+  
   if (!config.aiEnabled) {
     console.log('[startup] AI_ENABLED=false — replies will use the static fallback message.');
   }

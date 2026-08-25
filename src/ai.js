@@ -48,39 +48,42 @@ async function generateReply(userText) {
     }
 
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': process.env.GEMINI_API_KEY
-        },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [
-              {
-                text: SYSTEM_PROMPT
-              }
-            ]
-          },
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  text: prompt
-                }
-              ]
-            }
-          ],
-          generationConfig: {
-            maxOutputTokens: MAX_REPLY_TOKENS,
-            temperature: 0.8
+  `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': process.env.GEMINI_API_KEY
+    },
+    body: JSON.stringify({
+      systemInstruction: {
+        parts: [
+          {
+            text: SYSTEM_PROMPT
           }
-        }),
-        signal: controller.signal
+        ]
+      },
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: prompt
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        maxOutputTokens: MAX_REPLY_TOKENS,
+        temperature: 0.8,
+        thinkingConfig: {
+          thinkingLevel: "low"
+        }
       }
-    );
+    }),
+    signal: controller.signal
+  }
+);
 
     if (!response.ok) {
       let errorBody = '';

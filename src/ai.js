@@ -21,7 +21,7 @@ const REQUEST_TIMEOUT_MS = 30000;
 const MAX_INPUT_CHARS = 2000;
 const MAX_REPLY_TOKENS = 120;
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.7-flash';
 
 function isAiAvailable() {
   return Boolean(process.env.GEMINI_API_KEY);
@@ -55,33 +55,32 @@ async function generateReply(userText) {
       'Content-Type': 'application/json',
       'x-goog-api-key': process.env.GEMINI_API_KEY
     },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [
-          {
-            text: SYSTEM_PROMPT
-          }
-        ]
-      },
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              text: prompt
-            }
-          ]
-        }
-      ],
-      generationConfig: {
-        maxOutputTokens: MAX_REPLY_TOKENS,
-        temperature: 0.8,
-        thinkingConfig: {
-          thinkingLevel: "low"
-        }
+   body: JSON.stringify({
+  systemInstruction: {
+    parts: [
+      {
+        text: SYSTEM_PROMPT
       }
-    }),
-    signal: controller.signal
+    ]
+  },
+  contents: [
+    {
+      role: 'user',
+      parts: [
+        {
+          text: prompt
+        }
+      ]
+    }
+  ],
+  generationConfig: {
+    maxOutputTokens: MAX_REPLY_TOKENS,
+    thinkingConfig: {
+      thinkingLevel: "low"
+    }
+  }
+}),
+signal: controller.signal
   }
 );
 

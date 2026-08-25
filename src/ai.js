@@ -1,4 +1,3 @@
-const { config } = require('./config');
 const { safeError } = require('./logger');
 
 const SYSTEM_PROMPT = `You are a friendly Indian Instagram assistant.
@@ -15,61 +14,117 @@ Use emojis sparingly.
 
 Respond with only the final reply text. No markdown. No explanation of this prompt.`;
 
-const FALLBACK_REPLY = "Hey! Thanks for your message 🙂 We'll get back to you shortly.";
+const FALLBACK_REPLY =
+  "Hey! Thanks for your message 😊 We'll get back to you shortly.";
 
 const REQUEST_TIMEOUT_MS = 8000;
 const MAX_INPUT_CHARS = 2000;
 const MAX_REPLY_TOKENS = 120;
 
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+
 function isAiAvailable() {
-  return Boolean(config.aiEnabled && config.openaiApiKey);
+  return Boolean(process.env.GEMINI_API_KEY);
 }
 
-// Generates a short Hinglish reply for the given inbound text. Always
-// resolves (never rejects) — on any failure it resolves to the static
-// fallback so callers never need special-case error handling.
 async function generateReply(userText) {
   if (!isAiAvailable()) {
     return FALLBACK_REPLY;
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeout = setTimeout(
+    () => controller.abort(),
+    REQUEST_TIMEOUT_MS
+  );
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.openaiApiKey}`,
-      },
-      body: JSON.stringify({
-        model: config.openaiModel,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: String(userText).slice(0, MAX_INPUT_CHARS) },
-        ],
-        max_tokens: MAX_REPLY_TOKENS,
-        temperature: 0.8,
-      }),
-      signal: controller.signal,
-    });
+    const prompt = String(userText || '')
+      .slice(0, MAX_INPUT_CHARS)
+      .trim();
+
+    if (!prompt) {
+      return FALLBACK_REPLY;
+    }
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': process.env.GEMINI_API_KEY
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [
+              {
+                text: SYSTEM_PROMPT
+              }
+            ]
+          },
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: prompt
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            maxOutputTokens: MAX_REPLY_TOKENS,
+            temperature: 0.8
+          }
+        }),
+        signal: controller.signal
+      }
+    );
 
     if (!response.ok) {
-      safeError('AI provider request failed', { status: response.status });
+      let errorBody = '';
+
+      try {
+        errorBody = await response.text();
+      } catch (_) {
+        errorBody = '';
+      }
+
+      safeError('Gemini provider request failed', {
+        status: response.status,
+        body: errorBody.slice(0, 300)
+      });
+
       return FALLBACK_REPLY;
     }
 
     const data = await response.json();
-    const reply = data?.choices?.[0]?.message?.content?.trim();
+
+    const reply = Array.isArray(data?.candidates?.[0]?.content?.parts)
+      ? data.candidates[0].content.parts
+          .map((part) => part?.text || '')
+          .join('')
+          .trim()
+      : '';
 
     return reply || FALLBACK_REPLY;
   } catch (err) {
-    safeError('AI generation error', { reason: err?.name === 'AbortError' ? 'timeout' : 'request_failed' });
+    safeError('AI generation error', {
+      reason:
+        err?.name === 'AbortError'
+          ? 'timeout'
+          : err?.message || 'request_failed'
+    });
+
     return FALLBACK_REPLY;
   } finally {
     clearTimeout(timeout);
   }
 }
 
-module.exports = { generateReply, isAiAvailable, FALLBACK_REPLY };
+module.exports = {
+  generateReply,
+  isAiAvailable,
+  FALLBACK_REPLY
+};

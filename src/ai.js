@@ -17,7 +17,7 @@ Respond with only the final reply text. No markdown. No explanation of this prom
 const FALLBACK_REPLY =
   "Hey! Thanks for your message 😊 We'll get back to you shortly.";
 
-const REQUEST_TIMEOUT_MS = 8000;
+const REQUEST_TIMEOUT_MS = 15000;
 const MAX_INPUT_CHARS = 2000;
 const MAX_REPLY_TOKENS = 120;
 
